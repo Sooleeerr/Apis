@@ -1,12 +1,14 @@
+//Librerias y conexiones
 const express = require("express");
 const app = express();
-const port = 4041;
+const port = 4040;
+const querystring = require("querystring");
 
 const { MongoClient, ServerApiVersion } = require("mongodb");
+var db;
 const uri =
   "mongodb+srv://asolermaria:cloa1997@cluster0.bmbqxd3.mongodb.net/?retryWrites=true&w=majority";
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -15,29 +17,44 @@ const client = new MongoClient(uri, {
   },
 });
 
+//Inicialización del cliente de la BD
 async function run() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+
+    db = client.db("TFG");
+    await db.command({ ping: 1 });
+
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
   } finally {
-    // Ensures that the client will close when you finish/error
-    await client.close();
   }
 }
 run().catch(console.dir);
 
-app.get("/detalleArticulo/:id_articulo", (req, res) => {
-  // Select a la bd, a la tabla de articulos where id_articulo
+/*******DEFINICION APIS *********/
+//Definición API detalleAritculo
+app.get("/detalleArticulo", async (req, res) => {
+  // Recogida variables introducidas en la llamada al API
+  var idArticulo = req.query.idArticulo;
 
-  //enviarla de vuelta con el contenido de la salida en formato json
-  res.send("Hello World tonto! {_id}");
+  //Conexión a la colección
+  let collection = await db.collection("articulos");
+
+  //Construcción de la query
+  let query = { id_articulo: idArticulo };
+
+  //Ejecución
+  let result = await collection.findOne(query);
+
+  // Devolución de resultados
+  if (!result) res.send("Not found").status(404);
+  else res.send(result).status(200);
 });
 
+/******* FIN DEFINICION DE APIS */
+//Levantar el servidor
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
