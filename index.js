@@ -131,7 +131,9 @@ app.get("/listaArticulos", async (req, res) => {
   }
 
   if (req.query.almacenamientoArticulo !== undefined) {
-    query.almacenamiento_articulo = almacenamientoArticulo;
+    //http://localhost:4040/listaArticulos?almacenamientoArticulo=128gb,256gb
+    almacenamientoArticulo = almacenamientoArticulo.split(",");
+    query.almacenamiento_articulo = { $in: almacenamientoArticulo };
   }
 
   if (req.query.colorArticulo !== undefined) {
