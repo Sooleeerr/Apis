@@ -61,7 +61,7 @@ app.get("/consultaUsuario", async (req, res) => {
   let collection = await db.collection("usuarios");
 
   //Construcción de la query
-  let query = { id_usuario : idUsuario };
+  let query = { id_usuario: idUsuario };
 
   //Ejecución
   let result = await collection.findOne(query);
@@ -81,7 +81,7 @@ app.get("/detallePedido", async (req, res) => {
   let collection = await db.collection("pedidos");
 
   //Construcción de la query
-  let query = { id_pedido : idPedido };
+  let query = { id_pedido: idPedido };
 
   //Ejecución
   let result = await collection.findOne(query);
@@ -99,7 +99,7 @@ app.get("/listaCarrito", async (req, res) => {
   let collection = await db.collection("carrito_compra");
 
   //Construcción de la query
-  let query = { id_usuario : idUsuario };
+  let query = { id_usuario: idUsuario };
 
   //Ejecución
   let result = await collection.findOne(query);
@@ -114,28 +114,43 @@ app.get("/listaCarrito", async (req, res) => {
 - Salida: id_articulo, foto_articulo, nombre_articulo y precio_articulo.*/
 app.get("/listaArticulos", async (req, res) => {
   // Recogida variables introducidas en la llamada al API
+  let query = new Object();
+
   var marcaArticulo = req.query.marcaArticulo;
   var modeloArticulo = req.query.modeloArticuloArticulo;
   var almacenamientoArticulo = req.query.almacenamientoArticulo;
   var colorArticulo = req.query.colorArticulo;
   var precioMinimo = parseFloat(req.query.precioMinimo);
-  
 
+  if (req.query.marcaArticulo !== undefined) {
+    query.marca_articulo = marcaArticulo;
+  }
+
+  if (req.query.modeloArticuloArticul !== undefined) {
+    query.modelo_articulo = modeloArticulo;
+  }
+
+  if (req.query.almacenamientoArticulo !== undefined) {
+    query.almacenamiento_articulo = almacenamientoArticulo;
+  }
+
+  if (req.query.colorArticulo !== undefined) {
+    query.color_articulo = colorArticulo;
+  }
+
+  if (req.query.precioMinimo !== undefined) {
+    query.precio_articulo = { $gte: precioMinimo };
+  }
+
+  //TODO quitar el log
+  console.log(query);
   //Conexión a la colección
   let collection = await db.collection("articulos");
 
-  //Construcción de la query
-  let query = { marca_articulo : marcaArticulo,
-                modelo_articulo : modeloArticulo,
-                almacenamiento_articulo : almacenamientoArticulo,
-                color_articulo : colorArticulo,
-                precio_articulo: { $gte: precioMinimo }};
-                //TODO precioMaximo
+  //TODO precioMaximo
 
   //Ejecución
-  let result= await collection.find(query).toArray();
-
-  
+  let result = await collection.find(query).toArray();
 
   // Devolución de resultados
   if (!result) res.send("Not found").status(404);
