@@ -66,8 +66,6 @@ app.get("/consultaUsuario", async (req, res) => {
   //Ejecución
   let result = await collection.findOne(query);
 
-  //TODO: Salida: nombre_usuario, correo_usuario, contraseña_usuario.
-
   // Devolución de resultados
   if (!result) res.send("Not found").status(404);
   else res.send(result).status(200);
@@ -109,24 +107,22 @@ app.get("/listaCarrito", async (req, res) => {
   else res.send(result).status(200);
 });
 
-/*Descripción: Este API devolverá la lista de artículos de la tienda que cumplan los criterios que se faciliten en la entrada.
-- Entrada: Categoria, , modelo, , , precio mínimo, precio máximo. Estos datos de entrada serán opcionales y excepto precio mínimo y precio máximo, el resto permitirá introducir varios valores para cada campo.
-- Salida: id_articulo, foto_articulo, nombre_articulo y precio_articulo.*/
 app.get("/listaArticulos", async (req, res) => {
   // Recogida variables introducidas en la llamada al API
   let query = new Object();
 
   var marcaArticulo = req.query.marcaArticulo;
-  var modeloArticulo = req.query.modeloArticuloArticulo;
+  var modeloArticulo = req.query.modeloArticulo;
   var almacenamientoArticulo = req.query.almacenamientoArticulo;
   var colorArticulo = req.query.colorArticulo;
   var precioMinimo = parseFloat(req.query.precioMinimo);
+  var precioMaximo = parseFloat(req.query.precioMaximo);
 
   if (req.query.marcaArticulo !== undefined) {
     query.marca_articulo = marcaArticulo;
   }
 
-  if (req.query.modeloArticuloArticul !== undefined) {
+  if (req.query.modeloArticulo !== undefined) {
     query.modelo_articulo = modeloArticulo;
   }
 
@@ -139,17 +135,23 @@ app.get("/listaArticulos", async (req, res) => {
   if (req.query.colorArticulo !== undefined) {
     query.color_articulo = colorArticulo;
   }
-
+  let rangoPrecios = new Object();
   if (req.query.precioMinimo !== undefined) {
-    query.precio_articulo = { $gte: precioMinimo };
+    rangoPrecios = { $gte: precioMinimo };
+    query.precio_articulo = rangoPrecios;
   }
 
+  if (req.query.precioMaximo !== undefined) {
+    if (rangoPrecios !== undefined) {
+      query.precio_articulo = { $gte: precioMinimo, $lte: precioMaximo };
+    } else {
+      query.precio_articulo = { $lte: precioMaximo };
+    }
+  }
   //TODO quitar el log
   console.log(query);
   //Conexión a la colección
   let collection = await db.collection("articulos");
-
-  //TODO precioMaximo
 
   //Ejecución
   let result = await collection.find(query).toArray();
