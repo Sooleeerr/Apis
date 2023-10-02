@@ -145,9 +145,9 @@ app.get("/listaArticulos", async (req, res) => {
     if (rangoPrecios !== undefined) {
       query.precio_articulo = { $gte: precioMinimo, $lte: precioMaximo };
     } else {
-      query.precio_articulo = { $lte: precioMaximo };
-    }
-  }
+      query.precio_articulo = { $lte: precioMaximo };
+    }
+  }
   //TODO quitar el log
   console.log(query);
   //Conexión a la colección
@@ -161,6 +161,33 @@ app.get("/listaArticulos", async (req, res) => {
   else res.send(result).status(200);
 });
 
+app.post("/registroUsuario", async (req, res) => {
+  let collection = await db.collection("usuarios");
+
+  var idUsuario = req.query.idUsuario;
+  var contrasenaUsuario = req.query.contrasenaUsuario;
+  var emailUsuario = req.query.emailUsuario;
+  var nombreUsuario = req.query.nombreUsuario;
+
+  //TODO: Validar presencia de todas las variables de entrada
+
+  //TODO: Validar no existencia de otro idUsuario igual
+
+  //TODO: Validar caracteristicas contraseña
+
+  var usuario = {
+    contraseña_usuario: contrasenaUsuario,
+    email_usuario: emailUsuario,
+    id_usuario: idUsuario,
+    nombre_usuario: nombreUsuario,
+  };
+  let result = await collection.insertOne(usuario);
+  console.log(`A document was inserted with the _id: ${result.insertedId}`);
+
+  // Devolución de resultados
+  if (!result) res.send("Not found").status(404);
+  else res.send(result).status(200);
+});
 /****** FIN DEFINICION DE APIS ****/
 
 //Levantar el servidor
