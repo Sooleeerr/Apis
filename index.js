@@ -211,7 +211,6 @@ app.post("/registroUsuario", async (req, res) => {
 });
 
 app.get("/articulosRelacionados", async (req, res) => {
-
   //TODO: Recuperar detalle articulos
   // Recogida variables introducidas en la llamada al API
   var idArticulo = req.query.idArticulo;
@@ -231,7 +230,6 @@ app.get("/articulosRelacionados", async (req, res) => {
 });
 
 app.get("/articulosVisitados", async (req, res) => {
-
   //TODO: Recuperar detalle articulos
   // Recogida variables introducidas en la llamada al API
   var idUsuario = req.query.idUsuario;
@@ -267,6 +265,62 @@ app.get("/listaPedidos", async (req, res) => {
   if (!result) res.send("Not found").status(404);
   else res.send(result).status(200);
 });
+
+app.post("/visitaArticulo", async (req, res) => {
+  let collection = await db.collection("articulos_visitados");
+
+  var idUsuario = req.query.idUsuario;
+  var idArticulo = req.query.idArticulo;
+
+  var visita = {
+    id_usuario: idUsuario,
+    id_articulo: idArticulo,
+  };
+
+  let result = await collection.insertOne(visita);
+  if (!result)
+    res.send("Error en la insercion de la visita").status(404);
+  else res.send(result).status(200);
+});
+
+app.get("/articulosPromocion", async (req, res) => {
+  // Recogida variables introducidas en la llamada al API
+  
+
+  //Conexión a la colección
+  let collection = await db.collection("articulos");
+
+  //Construcción de la query
+  let query = { articulo_promocion: "yes" };
+
+  //Ejecución
+  let result = await collection.find(query).toArray();
+
+  // Devolución de resultados
+  if (!result) res.send("Not found").status(404);
+  else res.send(result).status(200);
+});
+
+app.get("/inicioSesion", async (req, res) => {
+  // Recogida variables introducidas en la llamada al API
+  var idUsuario = req.query.idUsuario;
+  var contrasenaUsuario = req.query.contrasenaUsuario;
+
+  //Conexión a la colección
+  let collection = await db.collection("usuarios");
+
+  //Construcción de la query
+  let query = { id_usuario: idUsuario, contraseña_usuario : contrasenaUsuario };
+
+  //Ejecución
+  let result = await collection.findOne(query);
+
+  // Devolución de resultados
+  if (!result) res.send("Not found").status(404);
+  else res.send(result).status(200);
+});
+
+
 /****** FIN DEFINICION DE APIS ******/
 
 //Levantar el servidor
