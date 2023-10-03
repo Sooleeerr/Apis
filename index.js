@@ -33,7 +33,7 @@ async function run() {
 }
 run().catch(console.dir);
 
-/****** INICIO DEFINICION APIS *******/
+/****** INICIO DEFINICION APIS ******/
 
 app.get("/detalleArticulo", async (req, res) => {
   // Recogida variables introducidas en la llamada al API
@@ -164,31 +164,110 @@ app.get("/listaArticulos", async (req, res) => {
 app.post("/registroUsuario", async (req, res) => {
   let collection = await db.collection("usuarios");
 
-  var idUsuario = req.query.idUsuario;
   var contrasenaUsuario = req.query.contrasenaUsuario;
   var emailUsuario = req.query.emailUsuario;
   var nombreUsuario = req.query.nombreUsuario;
 
-  //TODO: Validar presencia de todas las variables de entrada
+  //Validar presencia de todas las variables de entrada
 
-  //TODO: Validar no existencia de otro idUsuario igual
+  if (
+    req.query.contrasenaUsuario === undefined ||
+    req.query.emailUsuario === undefined ||
+    req.query.nombreUsuario === undefined
+  ) {
+    res.send("Faltan parametros de entrada").status(404);
+  } else {
+    //Validar no existencia de otro idUsuario igual
+    var idUsuario = emailUsuario;
+    let collectionUsuario = await db.collection("usuarios");
+    let query = { id_usuario: idUsuario };
+    let result2 = await collectionUsuario.findOne(query);
+    if (!result2) {
+      //Validar caracteristicas contraseña
+      if (contrasenaUsuario.length < 8) {
+        res
+          .send("Longitud minima de la contraseña debe ser de 8 caracteres")
+          .status(404);
+      } else {
+        var usuario = {
+          contraseña_usuario: contrasenaUsuario,
+          email_usuario: emailUsuario,
+          id_usuario: emailUsuario,
+          nombre_usuario: nombreUsuario,
+        };
 
-  //TODO: Validar caracteristicas contraseña
+        let result = await collection.insertOne(usuario);
+        console.log(
+          `A document was inserted with the _id: ${result.insertedId}`
+        );
+        if (!result)
+          res.send("Error en la insercion en el alta de usuario").status(404);
+        else res.send(result).status(200);
+      }
+    } else {
+      res.send("Usuario ya existe").status(404);
+    }
+  }
+});
 
-  var usuario = {
-    contraseña_usuario: contrasenaUsuario,
-    email_usuario: emailUsuario,
-    id_usuario: idUsuario,
-    nombre_usuario: nombreUsuario,
-  };
-  let result = await collection.insertOne(usuario);
-  console.log(`A document was inserted with the _id: ${result.insertedId}`);
+app.get("/articulosRelacionados", async (req, res) => {
+
+  //TODO: Recuperar detalle articulos
+  // Recogida variables introducidas en la llamada al API
+  var idArticulo = req.query.idArticulo;
+
+  //Conexión a la colección
+  let collection = await db.collection("articulos_relacionados");
+
+  //Construcción de la query
+  let query = { id_articulo1: idArticulo };
+
+  //Ejecución
+  let result = await collection.find(query).toArray();
 
   // Devolución de resultados
   if (!result) res.send("Not found").status(404);
   else res.send(result).status(200);
 });
-/****** FIN DEFINICION DE APIS ****/
+
+app.get("/articulosVisitados", async (req, res) => {
+
+  //TODO: Recuperar detalle articulos
+  // Recogida variables introducidas en la llamada al API
+  var idUsuario = req.query.idUsuario;
+
+  //Conexión a la colección
+  let collection = await db.collection("articulos_visitados");
+
+  //Construcción de la query
+  let query = { id_usuario: idUsuario };
+
+  //Ejecución
+  let result = await collection.find(query).toArray();
+
+  // Devolución de resultados
+  if (!result) res.send("Not found").status(404);
+  else res.send(result).status(200);
+});
+
+app.get("/listaPedidos", async (req, res) => {
+  // Recogida variables introducidas en la llamada al API
+  var idUsuario = req.query.idUsuario;
+
+  //Conexión a la colección
+  let collection = await db.collection("pedidos");
+
+  //Construcción de la query
+  let query = { id_usuario: idUsuario };
+
+  //Ejecución
+  let result = await collection.findOne(query);
+
+  // Devolución de resultados
+  if (!result) res.send("Not found").status(404);
+  else res.send(result).status(200);
+});
+/****** FIN DEFINICION DE APIS ******/
 
 //Levantar el servidor
 app.listen(port, () => {
