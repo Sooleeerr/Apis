@@ -278,14 +278,12 @@ app.post("/visitaArticulo", async (req, res) => {
   };
 
   let result = await collection.insertOne(visita);
-  if (!result)
-    res.send("Error en la insercion de la visita").status(404);
+  if (!result) res.send("Error en la insercion de la visita").status(404);
   else res.send(result).status(200);
 });
 
 app.get("/articulosPromocion", async (req, res) => {
   // Recogida variables introducidas en la llamada al API
-  
 
   //Conexión a la colección
   let collection = await db.collection("articulos");
@@ -310,7 +308,7 @@ app.get("/inicioSesion", async (req, res) => {
   let collection = await db.collection("usuarios");
 
   //Construcción de la query
-  let query = { id_usuario: idUsuario, contraseña_usuario : contrasenaUsuario };
+  let query = { id_usuario: idUsuario, contraseña_usuario: contrasenaUsuario };
 
   //Ejecución
   let result = await collection.findOne(query);
@@ -320,6 +318,79 @@ app.get("/inicioSesion", async (req, res) => {
   else res.send(result).status(200);
 });
 
+app.put("/modificacionDatosUsuario", async (req, res) => {
+  // Recogida variables introducidas en la llamada al API
+  var idUsuario = req.query.idUsuario;
+  var contrasenaUsuario = req.query.contrasenaUsuario;
+  var nombreUsuario = req.query.nombreUsuario;
+
+  //Conexión a la colección
+  let collection = await db.collection("usuarios");
+
+  //Construcción de la query
+  let query = { id_usuario: idUsuario };
+  let document = {
+    $set: {
+      contraseña_usuario: contrasenaUsuario,
+      nombre_usuario: nombreUsuario,
+    },
+  };
+
+  //Ejecución
+  let result = await collection.updateOne(query, document);
+
+  // Devolución de resultados
+  if (!result) res.send("Not found").status(404);
+  else res.send(result).status(200);
+});
+
+app.put("/anadirArticuloCarrito", async (req, res) => {
+  let collection = await db.collection("carrito_compra");
+
+  var idUsuario = req.query.idUsuario;
+  var idArticulo = req.query.idArticulo;
+  var cantidadArticulo = req.query.cantidadArticulo;
+  var nombreArticulo = req.query.nombreArticulo;
+  var precioArticulo = req.query.precioArticulo;
+
+  let query = { id_usuario: idUsuario };
+  //comprobar si existe carrito creado o no. Si no existe, crearlo
+  let resultCarritoExistente = await collection.findOne(query);
+  if (!resultCarritoExistente) {
+    let documentoNuevoCarrito = {
+      id_usuario: idUsuario,
+      lista_articulos: [],
+      precio_total: 0,
+    };
+    let resultNuevoCarrito = await collection.insertOne(documentoNuevoCarrito);
+  }
+
+  let document = {
+    $push: {
+      lista_articulos: {
+        id_articulo: idArticulo,
+        cantidad_articulo: cantidadArticulo,
+        nombre_articulo: nombreArticulo,
+        precio_articulo: precioArticulo,
+      },
+    },
+  };
+
+  let result = await collection.updateOne(query, document);
+  
+  let resultTotalCarrito = await collection.findOne(query);
+
+  let precioTotal = parseFloat(resultTotalCarrito.precio_total);
+
+  precioTotal =
+    precioTotal + parseFloat(cantidadArticulo) * parseFloat(precioArticulo);
+  console.log(precioTotal);
+
+  let documentNuevoTotal = { $set: { precio_total: precioTotal } };
+  let resultNuevoTotal = await collection.updateOne(query, documentNuevoTotal);
+  if (!result) res.send("Error en la insercion del articulo").status(404);
+  else res.send(result).status(200);
+});
 
 /****** FIN DEFINICION DE APIS ******/
 
