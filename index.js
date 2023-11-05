@@ -392,6 +392,19 @@ app.put("/anadirArticuloCarrito", async (req, res) => {
   else res.send(result).status(200);
 });
 
+app.post("/realizarPedido", async (req, res) => {
+
+  //Recuperar parametros de entrada
+
+  //Ver lo que hay en el carrito
+
+  //Añadir pedido al cliente - creacion id pedido basado en idusuario + timestamp
+
+  // Vaciar carrito
+
+  if (!result) res.send("Error en la insercion del articulo").status(404);
+  else res.send(result).status(200);
+});
 /****** FIN DEFINICION DE APIS ******/
 
 //Levantar el servidor
