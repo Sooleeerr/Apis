@@ -49,8 +49,8 @@ app.get("/detalleArticulo", async (req, res) => {
   let result = await collection.findOne(query);
 
   // Devolución de resultados
-  if (!result) res.send("Not found").status(404);
-  else res.send(result).status(200);
+  if (!result) res.status(404).send("Not found");
+  else res.status(200).send(result);
 });
 
 app.get("/consultaUsuario", async (req, res) => {
@@ -67,8 +67,8 @@ app.get("/consultaUsuario", async (req, res) => {
   let result = await collection.findOne(query);
 
   // Devolución de resultados
-  if (!result) res.send("Not found").status(404);
-  else res.send(result).status(200);
+  if (!result) res.status(404).send("Not found");
+  else res.status(200).send(result);
 });
 
 app.get("/detallePedido", async (req, res) => {
@@ -85,8 +85,8 @@ app.get("/detallePedido", async (req, res) => {
   let result = await collection.findOne(query);
 
   // Devolución de resultados
-  if (!result) res.send("Not found").status(404);
-  else res.send(result).status(200);
+  if (!result) res.status(404).send("Not found");
+  else res.status(200).send(result);
 });
 
 app.get("/listaCarrito", async (req, res) => {
@@ -103,8 +103,8 @@ app.get("/listaCarrito", async (req, res) => {
   let result = await collection.findOne(query);
 
   // Devolución de resultados
-  if (!result) res.send("Not found").status(404);
-  else res.send(result).status(200);
+  if (!result) res.status(404).send("Not found");
+  else res.status(200).send(result);
 });
 
 app.get("/listaArticulos", async (req, res) => {
@@ -157,8 +157,8 @@ app.get("/listaArticulos", async (req, res) => {
   let result = await collection.find(query).toArray();
 
   // Devolución de resultados
-  if (!result) res.send("Not found").status(404);
-  else res.send(result).status(200);
+  if (!result) res.status(404).send("Not found");
+  else res.status(200).send(result);
 });
 
 app.post("/registroUsuario", async (req, res) => {
@@ -186,8 +186,8 @@ app.post("/registroUsuario", async (req, res) => {
       //Validar caracteristicas contraseña
       if (contrasenaUsuario.length < 8) {
         res
-          .send("Longitud minima de la contraseña debe ser de 8 caracteres")
-          .status(404);
+          .status(404)
+          .send("Longitud minima de la contraseña debe ser de 8 caracteres");
       } else {
         var usuario = {
           contraseña_usuario: contrasenaUsuario,
@@ -201,11 +201,11 @@ app.post("/registroUsuario", async (req, res) => {
           `A document was inserted with the _id: ${result.insertedId}`
         );
         if (!result)
-          res.send("Error en la insercion en el alta de usuario").status(404);
-        else res.send(result).status(200);
+          res.status(404).send("Error en la insercion en el alta de usuario");
+        else res.status(200).send(result);
       }
     } else {
-      res.send("Usuario ya existe").status(404);
+      res.status(404).send("Usuario ya existe");
     }
   }
 });
@@ -225,8 +225,8 @@ app.get("/articulosRelacionados", async (req, res) => {
   let result = await collection.find(query).toArray();
 
   // Devolución de resultados
-  if (!result) res.send("Not found").status(404);
-  else res.send(result).status(200);
+  if (!result) res.status(404).send("Not found");
+  else res.status(200).send(result);
 });
 
 app.get("/articulosVisitados", async (req, res) => {
@@ -244,8 +244,8 @@ app.get("/articulosVisitados", async (req, res) => {
   let result = await collection.find(query).toArray();
 
   // Devolución de resultados
-  if (!result) res.send("Not found").status(404);
-  else res.send(result).status(200);
+  if (!result) res.status(404).send("Not found");
+  else res.status(200).send(result);
 });
 
 app.get("/listaPedidos", async (req, res) => {
@@ -262,8 +262,8 @@ app.get("/listaPedidos", async (req, res) => {
   let result = await collection.findOne(query);
 
   // Devolución de resultados
-  if (!result) res.send("Not found").status(404);
-  else res.send(result).status(200);
+  if (!result) res.status(404).send("Not found");
+  else res.status(200).send(result);
 });
 
 app.post("/visitaArticulo", async (req, res) => {
@@ -278,8 +278,8 @@ app.post("/visitaArticulo", async (req, res) => {
   };
 
   let result = await collection.insertOne(visita);
-  if (!result) res.send("Error en la insercion de la visita").status(404);
-  else res.send(result).status(200);
+  if (!result) res.status(404).send("Error en la insercion de la visita");
+  else res.status(200).send(result);
 });
 
 app.get("/articulosPromocion", async (req, res) => {
@@ -295,8 +295,8 @@ app.get("/articulosPromocion", async (req, res) => {
   let result = await collection.find(query).toArray();
 
   // Devolución de resultados
-  if (!result) res.send("Not found").status(404);
-  else res.send(result).status(200);
+  if (!result) res.status(404).send("Not found");
+  else res.status(200).send(result);
 });
 
 app.get("/inicioSesion", async (req, res) => {
@@ -314,8 +314,9 @@ app.get("/inicioSesion", async (req, res) => {
   let result = await collection.findOne(query);
 
   // Devolución de resultados
-  if (!result) res.send("Not found").status(404);
-  else res.send(result).status(200);
+  if (!result) {
+    res.status(404).send("Usuario y/ contraseña no válido");
+  } else res.status(200).send(result);
 });
 
 app.put("/modificacionDatosUsuario", async (req, res) => {
@@ -340,8 +341,8 @@ app.put("/modificacionDatosUsuario", async (req, res) => {
   let result = await collection.updateOne(query, document);
 
   // Devolución de resultados
-  if (!result) res.send("Not found").status(404);
-  else res.send(result).status(200);
+  if (!result) res.status(404).send("Not found");
+  else res.status(200).send(result);
 });
 
 app.put("/anadirArticuloCarrito", async (req, res) => {
@@ -377,7 +378,7 @@ app.put("/anadirArticuloCarrito", async (req, res) => {
   };
 
   let result = await collection.updateOne(query, document);
-  
+
   let resultTotalCarrito = await collection.findOne(query);
 
   let precioTotal = parseFloat(resultTotalCarrito.precio_total);
@@ -388,12 +389,11 @@ app.put("/anadirArticuloCarrito", async (req, res) => {
 
   let documentNuevoTotal = { $set: { precio_total: precioTotal } };
   let resultNuevoTotal = await collection.updateOne(query, documentNuevoTotal);
-  if (!result) res.send("Error en la insercion del articulo").status(404);
-  else res.send(result).status(200);
+  if (!result) res.status(404).send("Error en la insercion del articulo");
+  else res.status(200).send(result);
 });
 
 app.post("/realizarPedido", async (req, res) => {
-
   //Recuperar parametros de entrada
 
   //Ver lo que hay en el carrito
@@ -402,8 +402,8 @@ app.post("/realizarPedido", async (req, res) => {
 
   // Vaciar carrito
 
-  if (!result) res.send("Error en la insercion del articulo").status(404);
-  else res.send(result).status(200);
+  if (!result) res.status(404).send("Error en la insercion del articulo");
+  else res.status(200).send(result);
 });
 /****** FIN DEFINICION DE APIS ******/
 
