@@ -127,7 +127,6 @@ app.get("/listaArticulos", async (req, res) => {
   }
 
   if (req.query.almacenamientoArticulo !== undefined) {
-    //http://localhost:4040/listaArticulos?almacenamientoArticulo=128gb,256gb
     almacenamientoArticulo = almacenamientoArticulo.split(",");
     query.almacenamiento_articulo = { $in: almacenamientoArticulo };
   }
@@ -148,8 +147,7 @@ app.get("/listaArticulos", async (req, res) => {
       query.precio_articulo = { $lte: precioMaximo };
     }
   }
-  //TODO quitar el log
-  console.log(query);
+
   //Conexión a la colección
   let collection = await db.collection("articulos");
 
@@ -175,7 +173,7 @@ app.post("/registroUsuario", async (req, res) => {
     req.query.emailUsuario === undefined ||
     req.query.nombreUsuario === undefined
   ) {
-    res.send("Faltan parametros de entrada").status(404);
+    res.status(404).send("Faltan parametros de entrada");
   } else {
     //Validar no existencia de otro idUsuario igual
     var idUsuario = emailUsuario;
