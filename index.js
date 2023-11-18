@@ -48,6 +48,9 @@ app.get("/detalleArticulo", async (req, res) => {
   //Ejecución
   let result = await collection.findOne(query);
 
+  console.log("API detalleArticulo");
+  console.log("Query:" + JSON.stringify(req.query));
+  console.log("Result" + JSON.stringify(result));
   // Devolución de resultados
   if (!result) res.status(404).send("Not found");
   else res.status(200).send(result);
@@ -65,7 +68,9 @@ app.get("/consultaUsuario", async (req, res) => {
 
   //Ejecución
   let result = await collection.findOne(query);
-
+  console.log("API consultaUsuario");
+  console.log("Query:" + JSON.stringify(req.query));
+  console.log("Result" + JSON.stringify(result));
   // Devolución de resultados
   if (!result) res.status(404).send("Not found");
   else res.status(200).send(result);
@@ -83,7 +88,9 @@ app.get("/detallePedido", async (req, res) => {
 
   //Ejecución
   let result = await collection.findOne(query);
-
+  console.log("API detallePedido");
+  console.log("Query:" + JSON.stringify(req.query));
+  console.log("Result" + JSON.stringify(result));
   // Devolución de resultados
   if (!result) res.status(404).send("Not found");
   else res.status(200).send(result);
@@ -101,7 +108,9 @@ app.get("/listaCarrito", async (req, res) => {
 
   //Ejecución
   let result = await collection.findOne(query);
-
+  console.log("API listaCarrito");
+  console.log("Query:" + JSON.stringify(req.query));
+  console.log("Result" + JSON.stringify(result));
   // Devolución de resultados
   if (!result) res.status(404).send("Not found");
   else res.status(200).send(result);
@@ -153,7 +162,9 @@ app.get("/listaArticulos", async (req, res) => {
 
   //Ejecución
   let result = await collection.find(query).toArray();
-
+  console.log("API listaArticulos");
+  console.log("Query:" + JSON.stringify(req.query));
+  console.log("Result" + JSON.stringify(result));
   // Devolución de resultados
   if (!result) res.status(404).send("Not found");
   else res.status(200).send(result);
@@ -165,6 +176,8 @@ app.post("/registroUsuario", async (req, res) => {
   var contrasenaUsuario = req.query.contrasenaUsuario;
   var emailUsuario = req.query.emailUsuario;
   var nombreUsuario = req.query.nombreUsuario;
+  console.log("API registroUsuario");
+  console.log("Query:" + JSON.stringify(req.query));
 
   //Validar presencia de todas las variables de entrada
 
@@ -221,7 +234,9 @@ app.get("/articulosRelacionados", async (req, res) => {
 
   //Ejecución
   let result = await collection.find(query).toArray();
-
+  console.log("API articulosRelacionados");
+  console.log("Query:" + JSON.stringify(req.query));
+  console.log("Result" + JSON.stringify(result));
   // Devolución de resultados
   if (!result) res.status(404).send("Not found");
   else res.status(200).send(result);
@@ -240,7 +255,9 @@ app.get("/articulosVisitados", async (req, res) => {
 
   //Ejecución
   let result = await collection.find(query).toArray();
-
+  console.log("API articulosVisitados");
+  console.log("Query:" + JSON.stringify(req.query));
+  console.log("Result" + JSON.stringify(result));
   // Devolución de resultados
   if (!result) res.status(404).send("Not found");
   else res.status(200).send(result);
@@ -258,7 +275,9 @@ app.get("/listaPedidos", async (req, res) => {
 
   //Ejecución
   let result = await collection.findOne(query);
-
+  console.log("API listaPedidos");
+  console.log("Query:" + JSON.stringify(req.query));
+  console.log("Result" + JSON.stringify(result));
   // Devolución de resultados
   if (!result) res.status(404).send("Not found");
   else res.status(200).send(result);
@@ -276,6 +295,9 @@ app.post("/visitaArticulo", async (req, res) => {
   };
 
   let result = await collection.insertOne(visita);
+  console.log("API visitaArticulo");
+  console.log("Query:" + JSON.stringify(req.query));
+  console.log("Result" + JSON.stringify(result));
   if (!result) res.status(404).send("Error en la insercion de la visita");
   else res.status(200).send(result);
 });
@@ -291,7 +313,9 @@ app.get("/articulosPromocion", async (req, res) => {
 
   //Ejecución
   let result = await collection.find(query).toArray();
-
+  console.log("API articulosPromocion");
+  console.log("Query:" + JSON.stringify(req.query));
+  console.log("Result" + JSON.stringify(result));
   // Devolución de resultados
   if (!result) res.status(404).send("Not found");
   else res.status(200).send(result);
@@ -310,7 +334,9 @@ app.get("/inicioSesion", async (req, res) => {
 
   //Ejecución
   let result = await collection.findOne(query);
-
+  console.log("API iniciSesion");
+  console.log("Query:" + JSON.stringify(req.query));
+  console.log("Result" + JSON.stringify(result));
   // Devolución de resultados
   if (!result) {
     res.status(404).send("Usuario y/ contraseña no válido");
@@ -337,7 +363,9 @@ app.put("/modificacionDatosUsuario", async (req, res) => {
 
   //Ejecución
   let result = await collection.updateOne(query, document);
-
+  console.log("API modificacionDatosUsuario");
+  console.log("Query:" + JSON.stringify(req.query));
+  console.log("Result" + JSON.stringify(result));
   // Devolución de resultados
   if (!result) res.status(404).send("Not found");
   else res.status(200).send(result);
@@ -387,6 +415,9 @@ app.put("/anadirArticuloCarrito", async (req, res) => {
 
   let documentNuevoTotal = { $set: { precio_total: precioTotal } };
   let resultNuevoTotal = await collection.updateOne(query, documentNuevoTotal);
+  console.log("API anadirArticuloCarrito");
+  console.log("Query:" + JSON.stringify(req.query));
+  console.log("Result" + JSON.stringify(result));
   if (!result) res.status(404).send("Error en la insercion del articulo");
   else res.status(200).send(result);
 });
@@ -399,7 +430,9 @@ app.post("/realizarPedido", async (req, res) => {
   //Añadir pedido al cliente - creacion id pedido basado en idusuario + timestamp
 
   // Vaciar carrito
-
+  console.log("API realizarPedido");
+  console.log("Query:" + JSON.stringify(req.query));
+  console.log("Result" + JSON.stringify(result));
   if (!result) res.status(404).send("Error en la insercion del articulo");
   else res.status(200).send(result);
 });
