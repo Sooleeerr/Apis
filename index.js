@@ -4,7 +4,7 @@ const app = express();
 const port = 4040;
 const querystring = require("querystring");
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 var db;
 const uri =
   "mongodb+srv://asolermaria:cloa1997@cluster0.bmbqxd3.mongodb.net/?retryWrites=true&w=majority";
@@ -254,10 +254,24 @@ app.get("/articulosRelacionados", async (req, res) => {
   let collection = await db.collection("articulos_relacionados");
 
   //Construcción de la query
-  let query = { id_articulo1: idArticulo };
 
   //Ejecución
-  let result = await collection.find(query).toArray();
+
+  //Ejecución
+  const result = await collection
+    .aggregate([
+      { $match: { id_articulo1: idArticulo } },
+      {
+        $lookup: {
+          from: "articulos",
+          localField: "id_articulo2",
+          foreignField: "id_articulo",
+          as: "detalle_articulo",
+        },
+      },
+      { $limit: 5 },
+    ])
+    .toArray();
   console.log("API articulosRelacionados");
   console.log("Query:" + JSON.stringify(req.query));
   console.log("Result" + JSON.stringify(result));
@@ -278,7 +292,22 @@ app.get("/articulosVisitados", async (req, res) => {
   let query = { id_usuario: idUsuario };
 
   //Ejecución
-  let result = await collection.find(query).toArray();
+  const result = await collection
+    .aggregate([
+      { $match: { id_usuario: idUsuario } },
+      {
+        $lookup: {
+          from: "articulos",
+          localField: "id_articulo",
+          foreignField: "id_articulo",
+          as: "detalle_articulo",
+        },
+      },
+      { $sort: { timestamp_visita: -1 } },
+      { $limit: 5 },
+    ])
+    .toArray();
+
   console.log("API articulosVisitados");
   console.log("Query:" + JSON.stringify(req.query));
   console.log("Result" + JSON.stringify(result));
