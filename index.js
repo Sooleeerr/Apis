@@ -221,6 +221,30 @@ app.post("/registroUsuario", async (req, res) => {
   }
 });
 
+app.get("/filtradoOpciones", async (req, res) => {
+  //TODO: Recuperar detalle articulos
+  // Recogida variables introducidas en la llamada al API
+  let fieldName = req.query.atributo;
+
+  //Conexión a la colección
+  let collection = await db.collection("articulos");
+
+  //Ejecución
+  let result = await collection
+    .aggregate([
+      { $group: { _id: `$${fieldName}` } },
+      { $project: { _id: 0, valorUnico: "$_id" } },
+    ])
+    .toArray();
+
+  console.log("API filtradoOpciones");
+  console.log("Query:" + JSON.stringify(req.query));
+  console.log("Result" + JSON.stringify(result));
+  // Devolución de resultados
+  if (!result) res.status(404).send("Not found");
+  else res.status(200).send(result);
+});
+
 app.get("/articulosRelacionados", async (req, res) => {
   //TODO: Recuperar detalle articulos
   // Recogida variables introducidas en la llamada al API
