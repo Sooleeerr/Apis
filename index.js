@@ -104,7 +104,7 @@ app.get("/listaCarrito", async (req, res) => {
   let collection = await db.collection("carrito_compra");
 
   //Construcción de la query
-  let query = { id_usuario: idUsuario };
+  let query = { id_usuario: idUsuario, estado: "Activo" };
 
   //Ejecución
   let result = await collection.findOne(query);
@@ -252,10 +252,6 @@ app.get("/articulosRelacionados", async (req, res) => {
 
   //Conexión a la colección
   let collection = await db.collection("articulos_relacionados");
-
-  //Construcción de la query
-
-  //Ejecución
 
   //Ejecución
   const result = await collection
@@ -433,7 +429,7 @@ app.put("/anadirArticuloCarrito", async (req, res) => {
   var nombreArticulo = req.query.nombreArticulo;
   var precioArticulo = req.query.precioArticulo;
 
-  let query = { id_usuario: idUsuario };
+  let query = { id_usuario: idUsuario, estado: "Activo" };
   //comprobar si existe carrito creado o no. Si no existe, crearlo
   let resultCarritoExistente = await collection.findOne(query);
   if (!resultCarritoExistente) {
@@ -441,6 +437,7 @@ app.put("/anadirArticuloCarrito", async (req, res) => {
       id_usuario: idUsuario,
       lista_articulos: [],
       precio_total: 0,
+      estado: "Activo",
     };
     let resultNuevoCarrito = await collection.insertOne(documentoNuevoCarrito);
   }
@@ -477,17 +474,61 @@ app.put("/anadirArticuloCarrito", async (req, res) => {
 
 app.post("/realizarPedido", async (req, res) => {
   //Recuperar parametros de entrada
-
+  var id_usuario = req.query.idUsuario;
   //Ver lo que hay en el carrito
+  let carritoCollection = await db.collection("carrito_compra");
+  let pedidoCollection = await db.collection("pedidos");
+  // Obtener el último número de pedido existente
+  const ultimoPedido = await pedidoCollection
+    .find()
+    .sort({ _id: -1 })
+    .limit(1)
+    .toArray();
+  const ultimoNumeroPedido =
+    ultimoPedido.length > 0
+      ? parseInt(ultimoPedido[0].id_pedido.split("-")[1])
+      : 0;
+  const nuevoNumeroPedido = ultimoNumeroPedido + 1;
+  const idPedido = `MM-${nuevoNumeroPedido}`;
+  const carrito = await carritoCollection.findOne({
+    id_usuario: id_usuario,
+    estado: "Activo",
+  });
 
-  //Añadir pedido al cliente - creacion id pedido basado en idusuario + timestamp
+  if (carrito) {
+    const { lista_articulos, precio_total } = carrito;
 
+    // Crear un nuevo documento de pedido
+    const fechaPedido = new Date();
+    const nuevoPedido = {
+      id_pedido: idPedido,
+      id_usuario,
+      lista_articulos,
+      precio_pedido: precio_total,
+      fecha_pedido: fechaPedido,
+    };
+
+    // Insertar el nuevo pedido en la colección de pedidos
+    await pedidoCollection.insertOne(nuevoPedido);
+
+    // Actualizar el estado del carrito a "Inactivo"
+    await carritoCollection.updateOne(
+      { id_usuario: id_usuario, estado: "Activo" },
+      { $set: { estado: "Inactivo" } }
+    );
+
+    res.json({ mensaje: "Pedido creado exitosamente.", id_pedido: idPedido });
+  } else {
+    res.status(404).json({
+      error: "No se encontró el carrito para el usuario proporcionado.",
+    });
+  }
   // Vaciar carrito
   console.log("API realizarPedido");
   console.log("Query:" + JSON.stringify(req.query));
-  console.log("Result" + JSON.stringify(result));
-  if (!result) res.status(404).send("Error en la insercion del articulo");
-  else res.status(200).send(result);
+  //console.log("Result" + JSON.stringify(result));
+  //if (!result) res.status(404).send("Error en la insercion del articulo");
+  //else res.status(200).send(result);
 });
 /****** FIN DEFINICION DE APIS ******/
 
