@@ -278,7 +278,6 @@ app.post("/registroUsuario", async (req, res) => {
 });
 
 app.get("/filtradoOpciones", async (req, res) => {
-  //TODO: Recuperar detalle articulos
   // Recogida variables introducidas en la llamada al API
   let fieldName = req.query.atributo;
 
@@ -302,7 +301,6 @@ app.get("/filtradoOpciones", async (req, res) => {
 });
 
 app.get("/articulosRelacionados", async (req, res) => {
-  //TODO: Recuperar detalle articulos
   // Recogida variables introducidas en la llamada al API
   var idArticulo = req.query.idArticulo;
 
@@ -333,7 +331,6 @@ app.get("/articulosRelacionados", async (req, res) => {
 });
 
 app.get("/articulosVisitados", async (req, res) => {
-  //TODO: Recuperar detalle articulos
   // Recogida variables introducidas en la llamada al API
   var idUsuario = req.query.idUsuario;
 
@@ -389,22 +386,34 @@ app.get("/listaPedidos", async (req, res) => {
 });
 
 app.post("/visitaArticulo", async (req, res) => {
+  console.log("API visitaArticulo");
+  console.log("Query:" + JSON.stringify(req.query));
+
   let collection = await db.collection("articulos_visitados");
 
   var idUsuario = req.query.idUsuario;
   var idArticulo = req.query.idArticulo;
 
-  var visita = {
+  const existingVisit = await collection.findOne({
     id_usuario: idUsuario,
     id_articulo: idArticulo,
-  };
+  });
+  if (existingVisit) {
+    await collection.updateOne(
+      { id_usuario: idUsuario, id_articulo: idArticulo },
+      { $set: { timestamp_visita: new Date() } }
+    );
+    res.json({ mensaje: "Registro de visita actualizado." });
+  } else {
+    var visita = {
+      id_usuario: idUsuario,
+      id_articulo: idArticulo,
+      timestamp_visita: new Date(),
+    };
 
-  let result = await collection.insertOne(visita);
-  console.log("API visitaArticulo");
-  console.log("Query:" + JSON.stringify(req.query));
-  console.log("Result" + JSON.stringify(result));
-  if (!result) res.status(404).send("Error en la insercion de la visita");
-  else res.status(200).send(result);
+    let result = await collection.insertOne(visita);
+    res.json({ mensaje: "Nuevo registro de visita creado." });
+  }
 });
 
 app.get("/articulosPromocion", async (req, res) => {
@@ -481,7 +490,7 @@ app.put("/anadirArticuloCarrito", async (req, res) => {
 
   var idUsuario = req.query.idUsuario;
   var idArticulo = req.query.idArticulo;
-  var cantidadArticulo = req.query.cantidadArticulo;
+  var cantidadArticulo = req.query.cantidadArticulo; //+1 o el -1
   var precioArticulo = req.query.precioArticulo;
   try {
     let query = { id_usuario: idUsuario, estado: "Activo" };
