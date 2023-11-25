@@ -82,38 +82,94 @@ app.get("/detallePedido", async (req, res) => {
 
   //Conexión a la colección
   let collection = await db.collection("pedidos");
+  let articulosCollection = await db.collection("articulos");
 
   //Construcción de la query
   let query = { id_pedido: idPedido };
-
-  //Ejecución
-  let result = await collection.findOne(query);
   console.log("API detallePedido");
   console.log("Query:" + JSON.stringify(req.query));
-  console.log("Result" + JSON.stringify(result));
+  //Ejecución
+  let result = await collection.findOne(query);
+
+  if (!result) {
+    return res.status(404).json({ mensaje: "No se encontró ese pedido" });
+  }
+  const listaArticulos = await Promise.all(
+    result.lista_articulos.map(async (item) => {
+      const detalleArticulo = await articulosCollection.findOne({
+        id_articulo: item.id_articulo,
+      });
+      return {
+        id_articulo: detalleArticulo.id_articulo,
+        nombre_articulo: detalleArticulo.nombre_articulo,
+        marca_articulo: detalleArticulo.marca_articulo,
+        modelo_articulo: detalleArticulo.modelo_articulo,
+        precio_articulo: item.precio_articulo,
+        color_articulo: detalleArticulo.color_articulo,
+        almacenamiento_articulo: detalleArticulo.almacenamiento_articulo,
+        foto_articulo: detalleArticulo.foto_articulo,
+        articulo_promocion: detalleArticulo.articulo_promocion,
+        cantidad_articulo: item.cantidad_articulo,
+        precio_total_articulo:
+          parseFloat(item.precio_articulo) * parseInt(item.cantidad_articulo),
+      };
+    })
+  );
+
+  result.lista_articulos = await Promise.all(listaArticulos);
+
+  res.json(result);
+
   // Devolución de resultados
-  if (!result) res.status(404).send("Not found");
-  else res.status(200).send(result);
 });
 
 app.get("/listaCarrito", async (req, res) => {
   // Recogida variables introducidas en la llamada al API
   var idUsuario = req.query.idUsuario;
+  console.log("API listaCarrito");
+  console.log("Query:" + JSON.stringify(req.query));
 
   //Conexión a la colección
-  let collection = await db.collection("carrito_compra");
+  let carritoCollection = await db.collection("carrito_compra");
+  let articulosCollection = await db.collection("articulos");
 
   //Construcción de la query
   let query = { id_usuario: idUsuario, estado: "Activo" };
 
   //Ejecución
-  let result = await collection.findOne(query);
-  console.log("API listaCarrito");
-  console.log("Query:" + JSON.stringify(req.query));
-  console.log("Result" + JSON.stringify(result));
+  let carrito = await carritoCollection.findOne(query);
+  if (!carrito) {
+    return res
+      .status(404)
+      .json({ mensaje: "No se encontró un carrito activo para ese usuario." });
+  }
+  const listaArticulos = await Promise.all(
+    carrito.lista_articulos.map(async (item) => {
+      const detalleArticulo = await articulosCollection.findOne({
+        id_articulo: item.id_articulo,
+      });
+      return {
+        id_articulo: detalleArticulo.id_articulo,
+        nombre_articulo: detalleArticulo.nombre_articulo,
+        marca_articulo: detalleArticulo.marca_articulo,
+        modelo_articulo: detalleArticulo.modelo_articulo,
+        precio_articulo: item.precio_articulo,
+        color_articulo: detalleArticulo.color_articulo,
+        almacenamiento_articulo: detalleArticulo.almacenamiento_articulo,
+        foto_articulo: detalleArticulo.foto_articulo,
+        articulo_promocion: detalleArticulo.articulo_promocion,
+        cantidad_articulo: item.cantidad_articulo,
+        precio_total_articulo:
+          parseFloat(item.precio_articulo) * parseInt(item.cantidad_articulo),
+      };
+    })
+  );
+
+  carrito.lista_articulos = await Promise.all(listaArticulos);
+
+  res.json(carrito);
+
   // Devolución de resultados
-  if (!result) res.status(404).send("Not found");
-  else res.status(200).send(result);
 });
 
 app.get("/listaArticulos", async (req, res) => {
@@ -426,50 +482,78 @@ app.put("/anadirArticuloCarrito", async (req, res) => {
   var idUsuario = req.query.idUsuario;
   var idArticulo = req.query.idArticulo;
   var cantidadArticulo = req.query.cantidadArticulo;
-  var nombreArticulo = req.query.nombreArticulo;
   var precioArticulo = req.query.precioArticulo;
+  try {
+    let query = { id_usuario: idUsuario, estado: "Activo" };
+    //comprobar si existe carrito creado o no. Si no existe, crearlo
+    let resultCarritoExistente = await collection.findOne(query);
+    if (!resultCarritoExistente) {
+      if (cantidadArticulo == "1") {
+        let documentoNuevoCarrito = {
+          id_usuario: idUsuario,
+          lista_articulos: [
+            {
+              id_articulo: idArticulo,
+              cantidad_articulo: 1,
+              precio_articulo: precioArticulo,
+            },
+          ],
+          precio_total: parseFloat(precioArticulo),
+          estado: "Activo",
+        };
+        let resultNuevoCarrito = await collection.insertOne(
+          documentoNuevoCarrito
+        );
+      }
+    } else {
+      const indiceArticulo = resultCarritoExistente.lista_articulos.findIndex(
+        (item) => item.id_articulo === idArticulo
+      );
 
-  let query = { id_usuario: idUsuario, estado: "Activo" };
-  //comprobar si existe carrito creado o no. Si no existe, crearlo
-  let resultCarritoExistente = await collection.findOne(query);
-  if (!resultCarritoExistente) {
-    let documentoNuevoCarrito = {
-      id_usuario: idUsuario,
-      lista_articulos: [],
-      precio_total: 0,
-      estado: "Activo",
-    };
-    let resultNuevoCarrito = await collection.insertOne(documentoNuevoCarrito);
+      if (indiceArticulo !== -1) {
+        // Si el artículo ya está en el carrito, se actualiza la cantidad
+        if (cantidadArticulo == "-1") {
+          // Si la operación es 'quitar', se disminuye la cantidad y el precio total
+          if (
+            resultCarritoExistente.lista_articulos[indiceArticulo]
+              .cantidad_articulo > 1
+          ) {
+            resultCarritoExistente.lista_articulos[indiceArticulo]
+              .cantidad_articulo--;
+            resultCarritoExistente.precio_total -= parseFloat(precioArticulo);
+          } else {
+            // Si la cantidad es 1, se elimina el artículo del carrito
+            resultCarritoExistente.lista_articulos.splice(indiceArticulo, 1);
+            resultCarritoExistente.precio_total -= parseFloat(precioArticulo);
+          }
+        } else {
+          // Si no se especifica una operación o es 'agregar', se aumenta la cantidad y el precio total
+          resultCarritoExistente.lista_articulos[indiceArticulo]
+            .cantidad_articulo++;
+          resultCarritoExistente.precio_total += parseFloat(precioArticulo);
+        }
+      } else {
+        // Si el artículo no está en el carrito, se añade
+        resultCarritoExistente.lista_articulos.push({
+          id_articulo: idArticulo,
+          cantidad_articulo: 1,
+          precio_articulo: precioArticulo,
+        });
+        resultCarritoExistente.precio_total += parseFloat(precioArticulo);
+      }
+
+      // Se actualiza el carrito en la base de datos
+      await collection.updateOne(
+        { id_usuario: idUsuario, estado: "Activo" },
+        { $set: resultCarritoExistente }
+      );
+    }
+
+    res.status(200).send("Carrito actualizado correctamente");
+  } catch (error) {
+    res.status(404).send("Error en la insercion del articulo");
   }
-
-  let document = {
-    $push: {
-      lista_articulos: {
-        id_articulo: idArticulo,
-        cantidad_articulo: cantidadArticulo,
-        nombre_articulo: nombreArticulo,
-        precio_articulo: precioArticulo,
-      },
-    },
-  };
-
-  let result = await collection.updateOne(query, document);
-
-  let resultTotalCarrito = await collection.findOne(query);
-
-  let precioTotal = parseFloat(resultTotalCarrito.precio_total);
-
-  precioTotal =
-    precioTotal + parseFloat(cantidadArticulo) * parseFloat(precioArticulo);
-  console.log(precioTotal);
-
-  let documentNuevoTotal = { $set: { precio_total: precioTotal } };
-  let resultNuevoTotal = await collection.updateOne(query, documentNuevoTotal);
   console.log("API anadirArticuloCarrito");
-  console.log("Query:" + JSON.stringify(req.query));
-  console.log("Result" + JSON.stringify(result));
-  if (!result) res.status(404).send("Error en la insercion del articulo");
-  else res.status(200).send(result);
 });
 
 app.post("/realizarPedido", async (req, res) => {
@@ -523,12 +607,9 @@ app.post("/realizarPedido", async (req, res) => {
       error: "No se encontró el carrito para el usuario proporcionado.",
     });
   }
-  // Vaciar carrito
+
   console.log("API realizarPedido");
   console.log("Query:" + JSON.stringify(req.query));
-  //console.log("Result" + JSON.stringify(result));
-  //if (!result) res.status(404).send("Error en la insercion del articulo");
-  //else res.status(200).send(result);
 });
 /****** FIN DEFINICION DE APIS ******/
 
