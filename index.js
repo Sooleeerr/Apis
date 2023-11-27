@@ -1,4 +1,5 @@
 //Librerias y conexiones
+const enviarCorreo = require("./enviarCorreo.js");
 const express = require("express");
 const app = express();
 const port = 4040;
@@ -166,6 +167,11 @@ app.get("/listaCarrito", async (req, res) => {
   );
 
   carrito.lista_articulos = await Promise.all(listaArticulos);
+  let totalArticulos = 0;
+  carrito.lista_articulos.forEach((articulo) => {
+    totalArticulos += parseInt(articulo.cantidad_articulo);
+  });
+  carrito.numero_articulos = totalArticulos;
 
   res.json(carrito);
 
@@ -267,6 +273,7 @@ app.post("/registroUsuario", async (req, res) => {
         console.log(
           `A document was inserted with the _id: ${result.insertedId}`
         );
+        enviarCorreo.enviarRegistro(nombreUsuario, emailUsuario);
         if (!result)
           res.status(404).send("Error en la insercion en el alta de usuario");
         else res.status(200).send(result);
