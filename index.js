@@ -326,7 +326,7 @@ app.get("/articulosRelacionados", async (req, res) => {
           as: "detalle_articulo",
         },
       },
-      { $limit: 5 },
+      { $limit: 3 },
     ])
     .toArray();
   console.log("API articulosRelacionados");
@@ -383,12 +383,12 @@ app.get("/listaPedidos", async (req, res) => {
   let query = { id_usuario: idUsuario };
 
   //Ejecución
-  let result = await collection.findOne(query);
+  let result = await collection.find(query).toArray();
   console.log("API listaPedidos");
   console.log("Query:" + JSON.stringify(req.query));
   console.log("Result" + JSON.stringify(result));
   // Devolución de resultados
-  if (!result) res.status(404).send("Not found");
+  if (!result || result.length == 0) res.status(404).send("Not found");
   else res.status(200).send(result);
 });
 
