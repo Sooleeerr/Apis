@@ -178,7 +178,7 @@ app.get("/listaCarrito", async (req, res) => {
   // Devolución de resultados
 });
 
-app.get("/listaArticulos", async (req, res) => {
+app.get("/contarListaArticulos", async (req, res) => {
   // Recogida variables introducidas en la llamada al API
   let query = new Object();
 
@@ -188,22 +188,34 @@ app.get("/listaArticulos", async (req, res) => {
   var colorArticulo = req.query.colorArticulo;
   var precioMinimo = parseFloat(req.query.precioMinimo);
   var precioMaximo = parseFloat(req.query.precioMaximo);
+  var articuloPromocion = req.query.articuloPromocion;
+
+  if (req.query.articuloPromocion !== undefined) {
+    query.articuloPromocion = articuloPromocion;
+  }
 
   if (req.query.marcaArticulo !== undefined) {
-    query.marca_articulo = marcaArticulo;
+    if (Array.isArray(marcaArticulo))
+      query.marca_articulo = { $in: marcaArticulo };
+    else query.marca_articulo = marcaArticulo;
   }
 
   if (req.query.modeloArticulo !== undefined) {
-    query.modelo_articulo = modeloArticulo;
+    if (Array.isArray(modeloArticulo))
+      query.modelo_articulo = { $in: modeloArticulo };
+    else query.modelo_articulo = modeloArticulo;
   }
 
   if (req.query.almacenamientoArticulo !== undefined) {
-    almacenamientoArticulo = almacenamientoArticulo.split(",");
-    query.almacenamiento_articulo = { $in: almacenamientoArticulo };
+    if (Array.isArray(almacenamientoArticulo))
+      query.almacenamiento_articulo = { $in: almacenamientoArticulo };
+    else query.almacenamiento_articulo = almacenamientoArticulo;
   }
 
   if (req.query.colorArticulo !== undefined) {
-    query.color_articulo = colorArticulo;
+    if (Array.isArray(colorArticulo))
+      query.color_articulo = { $in: colorArticulo };
+    else query.color_articulo = colorArticulo;
   }
   let rangoPrecios = new Object();
   if (req.query.precioMinimo !== undefined) {
@@ -223,7 +235,89 @@ app.get("/listaArticulos", async (req, res) => {
   let collection = await db.collection("articulos");
 
   //Ejecución
-  let result = await collection.find(query).toArray();
+  let result = await collection.countDocuments(query);
+  console.log("API contarListaArticulos");
+  console.log("Query: " + JSON.stringify(req.query));
+  console.log("Result: " + JSON.stringify(result));
+  // Devolución de resultados
+  if (!result) res.status(404).send("0");
+  else res.status(200).send(JSON.stringify(result));
+});
+
+app.get("/listaArticulos", async (req, res) => {
+  // Recogida variables introducidas en la llamada al API
+  let query = new Object();
+  let sortQuery = new Object();
+  var marcaArticulo = req.query.marcaArticulo;
+  var modeloArticulo = req.query.modeloArticulo;
+  var almacenamientoArticulo = req.query.almacenamientoArticulo;
+  var colorArticulo = req.query.colorArticulo;
+  var precioMinimo = parseFloat(req.query.precioMinimo);
+  var precioMaximo = parseFloat(req.query.precioMaximo);
+  var sortPrecio = req.query.sortPrecio;
+
+  if (req.query.sortPrecio !== undefined) {
+    if (req.query.sortPrecio != "0") sortQuery.precio_articulo = sortPrecio;
+  }
+
+  if (req.query.marcaArticulo !== undefined) {
+    //query.marca_articulo = marcaArticulo;
+    if (Array.isArray(marcaArticulo))
+      query.marca_articulo = { $in: marcaArticulo };
+    else query.marca_articulo = marcaArticulo;
+  }
+
+  if (req.query.modeloArticulo !== undefined) {
+    //query.modelo_articulo = modeloArticulo;
+    if (Array.isArray(modeloArticulo))
+      query.modelo_articulo = { $in: modeloArticulo };
+    else query.modelo_articulo = modeloArticulo;
+  }
+
+  if (req.query.almacenamientoArticulo !== undefined) {
+    //almacenamientoArticulo = almacenamientoArticulo.split(",");
+    if (Array.isArray(almacenamientoArticulo))
+      query.almacenamiento_articulo = { $in: almacenamientoArticulo };
+    else query.almacenamiento_articulo = almacenamientoArticulo;
+  }
+
+  if (req.query.colorArticulo !== undefined) {
+    //query.color_articulo = colorArticulo;
+    if (Array.isArray(colorArticulo))
+      query.color_articulo = { $in: colorArticulo };
+    else query.color_articulo = colorArticulo;
+  }
+  let rangoPrecios = new Object();
+  if (req.query.precioMinimo !== undefined) {
+    rangoPrecios = { $gte: precioMinimo };
+    query.precio_articulo = rangoPrecios;
+  }
+
+  if (req.query.precioMaximo !== undefined) {
+    if (rangoPrecios !== undefined) {
+      query.precio_articulo = { $gte: precioMinimo, $lte: precioMaximo };
+    } else {
+      query.precio_articulo = { $lte: precioMaximo };
+    }
+  }
+
+  //Conexión a la colección
+  let collection = await db.collection("articulos");
+  let projection = {
+    nombre_articulo: 1,
+    id_articulo: 1,
+    articulo_promocion: 1,
+    precio_articulo_anterior: 1,
+    precio_articulo: 1,
+    foto_articulo: 1,
+  };
+
+  //Ejecución
+  let result = await collection
+    .find(query)
+    .sort(sortQuery)
+    .project(projection)
+    .toArray();
   console.log("API listaArticulos");
   console.log("Query:" + JSON.stringify(req.query));
   console.log("Result" + JSON.stringify(result));
@@ -296,15 +390,18 @@ app.get("/filtradoOpciones", async (req, res) => {
     .aggregate([
       { $group: { _id: `$${fieldName}` } },
       { $project: { _id: 0, valorUnico: "$_id" } },
+      { $sort: { valorUnico: 1 } },
     ])
     .toArray();
+
+  const valores = result.map((objeto) => objeto.valorUnico);
 
   console.log("API filtradoOpciones");
   console.log("Query:" + JSON.stringify(req.query));
   console.log("Result" + JSON.stringify(result));
   // Devolución de resultados
   if (!result) res.status(404).send("Not found");
-  else res.status(200).send(result);
+  else res.status(200).send(valores);
 });
 
 app.get("/articulosRelacionados", async (req, res) => {
