@@ -713,7 +713,7 @@ app.post("/realizarPedido", async (req, res) => {
       { id_usuario: id_usuario, estado: "Activo" },
       { $set: { estado: "Inactivo" } }
     );
-
+    enviarCorreo.enviarPedido(idPedido, id_usuario, nuevoPedido);
     res.json({ mensaje: "Pedido creado exitosamente.", id_pedido: idPedido });
   } else {
     res.status(404).json({
