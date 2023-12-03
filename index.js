@@ -4,11 +4,11 @@ const express = require("express");
 const app = express();
 const port = 4040;
 const querystring = require("querystring");
+require("dotenv").config();
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 var db;
-const uri =
-  "mongodb+srv://asolermaria:cloa1997@cluster0.bmbqxd3.mongodb.net/?retryWrites=true&w=majority";
+const uri = process.env.URI_MONGODB;
 
 const client = new MongoClient(uri, {
   serverApi: {

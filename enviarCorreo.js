@@ -1,5 +1,6 @@
 const sgMail = require("@sendgrid/mail");
 const json2html = require("node-json2html");
+require("dotenv").config();
 
 let template_table_header = {
   "<>": "tr",
@@ -18,9 +19,7 @@ let template_table_body = {
     { "<>": "td", html: "${precio_articulo}" },
   ],
 };
-sgMail.setApiKey(
-  "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"
-);
+sgMail.setApiKey(process.env.SG_APIKEY);
 
 function enviarCorreo(to, subject, html) {
   msgCorreo = {
