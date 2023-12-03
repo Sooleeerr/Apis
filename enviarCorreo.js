@@ -19,7 +19,7 @@ let template_table_body = {
   ],
 };
 sgMail.setApiKey(
-  "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"
+  "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"
 );
 
 function enviarCorreo(to, subject, html) {
@@ -45,13 +45,6 @@ function enviarRegistro(nombre, email) {
   enviarCorreo(email, `${nombre}, bienvenido a Mundo Móvil`, html);
 }
 
-/*const nuevoPedido = {
-  id_pedido: idPedido,
-  id_usuario,
-  lista_articulos,
-  precio_pedido: precio_total,
-  fecha_pedido: fechaPedido,
-};*/
 function enviarPedido(numPedido, email, jsonPedido) {
   let data = jsonPedido.lista_articulos;
 
@@ -78,5 +71,4 @@ function enviarPedido(numPedido, email, jsonPedido) {
   enviarCorreo(email, `Te confirmamos tu pedido ${numPedido}`, html);
 }
 
-module.exports = { enviarRegistro };
-module.exports = { enviarPedido };
+module.exports = { enviarRegistro, enviarPedido };
