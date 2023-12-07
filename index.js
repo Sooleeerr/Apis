@@ -310,6 +310,7 @@ app.get("/listaArticulos", async (req, res) => {
     precio_articulo_anterior: 1,
     precio_articulo: 1,
     foto_articulo: 1,
+    stock: 1,
   };
 
   //Ejecución
@@ -675,46 +676,91 @@ app.post("/realizarPedido", async (req, res) => {
   //Ver lo que hay en el carrito
   let carritoCollection = await db.collection("carrito_compra");
   let pedidoCollection = await db.collection("pedidos");
-  // Obtener el último número de pedido existente
-  const ultimoPedido = await pedidoCollection
-    .find()
-    .sort({ _id: -1 })
-    .limit(1)
-    .toArray();
-  const ultimoNumeroPedido =
-    ultimoPedido.length > 0
-      ? parseInt(ultimoPedido[0].id_pedido.split("-")[1])
-      : 0;
-  const nuevoNumeroPedido = ultimoNumeroPedido + 1;
-  const idPedido = `MM-${nuevoNumeroPedido}`;
+  let articulosCollection = await db.collection("articulos");
+  let hayStock = true;
+
   const carrito = await carritoCollection.findOne({
     id_usuario: id_usuario,
     estado: "Activo",
   });
 
   if (carrito) {
-    const { lista_articulos, precio_total } = carrito;
+    for (const item of carrito.lista_articulos) {
+      const articuloId = item.id_articulo;
+      const cantidadComprada = item.cantidad_articulo;
 
-    // Crear un nuevo documento de pedido
-    const fechaPedido = new Date();
-    const nuevoPedido = {
-      id_pedido: idPedido,
-      id_usuario,
-      lista_articulos,
-      precio_pedido: precio_total,
-      fecha_pedido: fechaPedido,
-    };
+      const articulo = await articulosCollection.findOne({
+        id_articulo: articuloId,
+      });
+      if (articulo) {
+        const updatedStock = articulo.stock - cantidadComprada;
+        if (updatedStock <= 0) {
+          hayStock = false;
+        }
+      }
+    }
+    if (hayStock) {
+      for (const item of carrito.lista_articulos) {
+        const articuloId = item.id_articulo;
+        const cantidadComprada = item.cantidad_articulo;
 
-    // Insertar el nuevo pedido en la colección de pedidos
-    await pedidoCollection.insertOne(nuevoPedido);
+        const articulo = await articulosCollection.findOne({
+          id_articulo: articuloId,
+        });
+        if (articulo) {
+          const updatedStock = articulo.stock - cantidadComprada;
+          if (updatedStock <= 0) {
+            hayStock = false;
+          } else {
+            await articulosCollection.updateOne(
+              { id_articulo: articuloId },
+              { $set: { stock: updatedStock } }
+            );
+          }
+        }
+      }
 
-    // Actualizar el estado del carrito a "Inactivo"
-    await carritoCollection.updateOne(
-      { id_usuario: id_usuario, estado: "Activo" },
-      { $set: { estado: "Inactivo" } }
-    );
-    enviarCorreo.enviarPedido(idPedido, id_usuario, nuevoPedido);
-    res.json({ mensaje: "Pedido creado exitosamente.", id_pedido: idPedido });
+      // Obtener el último número de pedido existente
+      const ultimoPedido = await pedidoCollection
+        .find()
+        .sort({ _id: -1 })
+        .limit(1)
+        .toArray();
+      const ultimoNumeroPedido =
+        ultimoPedido.length > 0
+          ? parseInt(ultimoPedido[0].id_pedido.split("-")[1])
+          : 0;
+      const nuevoNumeroPedido = ultimoNumeroPedido + 1;
+      const idPedido = `MM-${nuevoNumeroPedido}`;
+
+      const { lista_articulos, precio_total } = carrito;
+
+      // Crear un nuevo documento de pedido
+      const fechaPedido = new Date();
+      const nuevoPedido = {
+        id_pedido: idPedido,
+        id_usuario,
+        lista_articulos,
+        precio_pedido: precio_total,
+        fecha_pedido: fechaPedido,
+      };
+
+      // Insertar el nuevo pedido en la colección de pedidos
+      await pedidoCollection.insertOne(nuevoPedido);
+
+      // Actualizar el estado del carrito a "Inactivo"
+      await carritoCollection.updateOne(
+        { id_usuario: id_usuario, estado: "Activo" },
+        { $set: { estado: "Inactivo" } }
+      );
+      enviarCorreo.enviarPedido(idPedido, id_usuario, nuevoPedido);
+      res.json({ mensaje: "Pedido creado exitosamente.", id_pedido: idPedido });
+    } else {
+      //No hay stock
+      res.status(404).json({
+        error: "Falta stock de algún producto.",
+      });
+    }
   } else {
     res.status(404).json({
       error: "No se encontró el carrito para el usuario proporcionado.",
