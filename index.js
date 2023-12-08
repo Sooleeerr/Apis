@@ -527,6 +527,32 @@ app.get("/listaPedidos", async (req, res) => {
   else res.status(200).send(result);
 });
 
+app.get("/listaPedidosAdmin", async (req, res) => {
+  let query = new Object();
+  var estadoPedido = req.query.estadoPedido;
+  if (req.query.idUsuario !== undefined) {
+    query.id_usuario = req.query.idUsuario;
+  }
+
+  if (req.query.estadoPedido !== undefined) {
+    if (Array.isArray(estadoPedido))
+      query.estado_pedido = { $in: estadoPedido };
+    else query.estado_pedido = estadoPedido;
+  }
+
+  //Conexión a la colección
+  let collection = await db.collection("pedidos");
+
+  //Ejecución
+  let result = await collection.find(query).toArray();
+  console.log("API listaPedidos");
+  console.log("Query:" + JSON.stringify(req.query));
+  console.log("Result" + JSON.stringify(result));
+  // Devolución de resultados
+  if (!result || result.length == 0) res.status(404).send("Not found");
+  else res.status(200).send(result);
+});
+
 app.post("/visitaArticulo", async (req, res) => {
   console.log("API visitaArticulo");
   console.log("Query:" + JSON.stringify(req.query));
@@ -630,79 +656,6 @@ app.put("/modificacionDatosUsuario", verifyToken, async (req, res) => {
   // Devolución de resultados
   if (!result) res.status(404).send("Not found");
   else res.status(200).send(result);
-});
-
-//TODO - ESTE API es a eliminar
-app.post("/nuevoArticulo", async (req, res) => {
-  // Recogida variables introducidas en la llamada al API
-  var nombreArticulo = req.query.nombreArticulo;
-  var marcaArticulo = req.query.marcaArticulo;
-  var modeloArticulo = req.query.modeloArticulo;
-  var precioArticulo = parseInt(req.query.precioArticulo);
-  var colorArticulo = req.query.colorArticulo;
-  var almacenamientoArticulo = req.query.almacenamientoArticulo;
-  var fotoArticulo = req.query.fotoArticulo;
-  var idArticulo = req.query.idArticulo;
-  var articuloPromocion = req.query.articuloPromocion;
-  var descripcionArticulo = req.query.descripcionArticulo;
-  var precioArticuloAnterior = parseInt(req.query.precioArticuloAnterior);
-  var stockArticulo = parseInt(req.query.stockArticulo);
-
-  /*// Patrón de expresión regular para encontrar todas las secuencias de escape
-  const escapePattern = /\\%/g;
-
-  // Reemplazar todas las secuencias de escape con un solo '%'
-  const cleanedEncodedHTML = descripcionArticulo.replace(escapePattern, "%");
-  descripcionArticulo = decodeURIComponent(descripcionArticulo);*/
-
-  //Conexión a la colección
-  let collection = await db.collection("articulos");
-
-  //Construcción de la query
-
-  let query = { id_articulo: idArticulo };
-  let result2 = await collection.findOne(query);
-  if (result2) {
-    //El artículo existe, actualizamos el artículo
-    let document = {
-      $set: {
-        nombre_articulo: nombreArticulo,
-        marca_articulo: marcaArticulo,
-        modelo_articulo: modeloArticulo,
-        precio_articulo: precioArticulo,
-        color_articulo: colorArticulo,
-        almacenamiento_articulo: almacenamientoArticulo,
-        foto_articulo: fotoArticulo,
-        id_articulo: idArticulo,
-        articulo_promocion: articuloPromocion,
-        descripcion_articulo: descripcionArticulo,
-        precio_articulo_anterior: precioArticuloAnterior,
-        stock: stockArticulo,
-      },
-    };
-    let result = await collection.updateOne(query, document);
-    if (!result) res.status(404).send("Error al actualizar");
-    else res.status(200).send(result);
-  } else {
-    //El artículo no existe, insertamos uno nuevo
-    let document = {
-      nombre_articulo: nombreArticulo,
-      marca_articulo: marcaArticulo,
-      modelo_articulo: modeloArticulo,
-      precio_articulo: precioArticulo,
-      color_articulo: colorArticulo,
-      almacenamiento_articulo: almacenamientoArticulo,
-      foto_articulo: fotoArticulo,
-      id_articulo: idArticulo,
-      articulo_promocion: articuloPromocion,
-      descripcion_articulo: descripcionArticulo,
-      precio_articulo_anterior: precioArticuloAnterior,
-      stock: stockArticulo,
-    };
-    let result = await collection.insertOne(document);
-    if (!result) res.status(404).send("Error al insertar");
-    else res.status(200).send(result);
-  }
 });
 
 app.post("/adminArticulo", async (req, res) => {
@@ -923,6 +876,7 @@ app.post("/realizarPedido", verifyToken, async (req, res) => {
         lista_articulos,
         precio_pedido: precio_total,
         fecha_pedido: fechaPedido,
+        estado_pedido: "1",
       };
 
       // Insertar el nuevo pedido en la colección de pedidos
@@ -949,6 +903,32 @@ app.post("/realizarPedido", verifyToken, async (req, res) => {
 
   console.log("API realizarPedido");
   console.log("Query:" + JSON.stringify(req.query));
+});
+
+app.put("/modificaEstadoPedido", async (req, res) => {
+  // Recogida variables introducidas en la llamada al API
+  var idPedido = req.query.idPedido;
+  var estadoPedido = req.query.estadoPedido;
+
+  //Conexión a la colección
+  let collection = await db.collection("pedidos");
+
+  //Construcción de la query
+  let query = { id_pedido: idPedido };
+  let document = {
+    $set: {
+      estado_pedido: estadoPedido,
+    },
+  };
+
+  //Ejecución
+  let result = await collection.updateOne(query, document);
+  console.log("API modificacionEstadoPedido");
+  console.log("Query:" + JSON.stringify(req.query));
+  console.log("Result" + JSON.stringify(result));
+  // Devolución de resultados
+  if (!result) res.status(404).send("Not found");
+  else res.status(200).send(result);
 });
 /****** FIN DEFINICION DE APIS ******/
 
