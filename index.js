@@ -1,14 +1,21 @@
 //Librerias y conexiones
 const enviarCorreo = require("./enviarCorreo.js");
 const express = require("express");
+const bodyParser = require("body-parser");
+
 const app = express();
+app.use(bodyParser.json());
+
 const port = 4040;
 const querystring = require("querystring");
+const jwt = require("jsonwebtoken");
+
 require("dotenv").config();
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 var db;
 const uri = process.env.URI_MONGODB;
+const secretKey = process.env.JWT_KEY;
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -33,6 +40,34 @@ async function run() {
   }
 }
 run().catch(console.dir);
+
+/*** VALIDACION TOKEN */
+function verifyToken(req, res, next) {
+  const token = req.headers["authorization"]; // Obtén el token de los encabezados de la solicitud
+
+  if (!token) {
+    return res
+      .status(401)
+      .json({ error: "Acceso no autorizado, token no proporcionado." });
+  }
+
+  jwt.verify(token.split(" ")[1], secretKey, (err, decoded) => {
+    if (err) {
+      return res
+        .status(403)
+        .json({ error: "Acceso prohibido, token inválido." });
+    }
+    // Verificar si el token pertenece al usuario
+    if (decoded !== req.query.idUsuario) {
+      // Reemplaza req.params.idUsuario con tu método para obtener el ID del usuario actual
+      return res.status(401).json({
+        error: "Acceso no autorizado, el token no corresponde al usuario.",
+      });
+    }
+    req.user = decoded; // Decodifica el token y almacena la información del usuario en la solicitud
+    next(); // Continúa con la ejecución de la siguiente función/middleware
+  });
+}
 
 /****** INICIO DEFINICION APIS ******/
 
@@ -333,6 +368,7 @@ app.post("/registroUsuario", async (req, res) => {
   var contrasenaUsuario = req.query.contrasenaUsuario;
   var emailUsuario = req.query.emailUsuario;
   var nombreUsuario = req.query.nombreUsuario;
+
   console.log("API registroUsuario");
   console.log("Query:" + JSON.stringify(req.query));
 
@@ -362,6 +398,7 @@ app.post("/registroUsuario", async (req, res) => {
           email_usuario: emailUsuario,
           id_usuario: emailUsuario,
           nombre_usuario: nombreUsuario,
+          admin: false,
         };
 
         let result = await collection.insertOne(usuario);
@@ -553,16 +590,21 @@ app.get("/inicioSesion", async (req, res) => {
 
   //Ejecución
   let result = await collection.findOne(query);
+
   console.log("API iniciSesion");
   console.log("Query:" + JSON.stringify(req.query));
   console.log("Result" + JSON.stringify(result));
   // Devolución de resultados
   if (!result) {
     res.status(404).send("Usuario y/ contraseña no válido");
-  } else res.status(200).send(result);
+  } else {
+    const token = jwt.sign(idUsuario, secretKey);
+    result.token = token;
+    res.status(200).send(result);
+  }
 });
 
-app.put("/modificacionDatosUsuario", async (req, res) => {
+app.put("/modificacionDatosUsuario", verifyToken, async (req, res) => {
   // Recogida variables introducidas en la llamada al API
   var idUsuario = req.query.idUsuario;
   var contrasenaUsuario = req.query.contrasenaUsuario;
@@ -588,6 +630,144 @@ app.put("/modificacionDatosUsuario", async (req, res) => {
   // Devolución de resultados
   if (!result) res.status(404).send("Not found");
   else res.status(200).send(result);
+});
+
+//TODO - ESTE API es a eliminar
+app.post("/nuevoArticulo", async (req, res) => {
+  // Recogida variables introducidas en la llamada al API
+  var nombreArticulo = req.query.nombreArticulo;
+  var marcaArticulo = req.query.marcaArticulo;
+  var modeloArticulo = req.query.modeloArticulo;
+  var precioArticulo = parseInt(req.query.precioArticulo);
+  var colorArticulo = req.query.colorArticulo;
+  var almacenamientoArticulo = req.query.almacenamientoArticulo;
+  var fotoArticulo = req.query.fotoArticulo;
+  var idArticulo = req.query.idArticulo;
+  var articuloPromocion = req.query.articuloPromocion;
+  var descripcionArticulo = req.query.descripcionArticulo;
+  var precioArticuloAnterior = parseInt(req.query.precioArticuloAnterior);
+  var stockArticulo = parseInt(req.query.stockArticulo);
+
+  /*// Patrón de expresión regular para encontrar todas las secuencias de escape
+  const escapePattern = /\\%/g;
+
+  // Reemplazar todas las secuencias de escape con un solo '%'
+  const cleanedEncodedHTML = descripcionArticulo.replace(escapePattern, "%");
+  descripcionArticulo = decodeURIComponent(descripcionArticulo);*/
+
+  //Conexión a la colección
+  let collection = await db.collection("articulos");
+
+  //Construcción de la query
+
+  let query = { id_articulo: idArticulo };
+  let result2 = await collection.findOne(query);
+  if (result2) {
+    //El artículo existe, actualizamos el artículo
+    let document = {
+      $set: {
+        nombre_articulo: nombreArticulo,
+        marca_articulo: marcaArticulo,
+        modelo_articulo: modeloArticulo,
+        precio_articulo: precioArticulo,
+        color_articulo: colorArticulo,
+        almacenamiento_articulo: almacenamientoArticulo,
+        foto_articulo: fotoArticulo,
+        id_articulo: idArticulo,
+        articulo_promocion: articuloPromocion,
+        descripcion_articulo: descripcionArticulo,
+        precio_articulo_anterior: precioArticuloAnterior,
+        stock: stockArticulo,
+      },
+    };
+    let result = await collection.updateOne(query, document);
+    if (!result) res.status(404).send("Error al actualizar");
+    else res.status(200).send(result);
+  } else {
+    //El artículo no existe, insertamos uno nuevo
+    let document = {
+      nombre_articulo: nombreArticulo,
+      marca_articulo: marcaArticulo,
+      modelo_articulo: modeloArticulo,
+      precio_articulo: precioArticulo,
+      color_articulo: colorArticulo,
+      almacenamiento_articulo: almacenamientoArticulo,
+      foto_articulo: fotoArticulo,
+      id_articulo: idArticulo,
+      articulo_promocion: articuloPromocion,
+      descripcion_articulo: descripcionArticulo,
+      precio_articulo_anterior: precioArticuloAnterior,
+      stock: stockArticulo,
+    };
+    let result = await collection.insertOne(document);
+    if (!result) res.status(404).send("Error al insertar");
+    else res.status(200).send(result);
+  }
+});
+
+app.post("/adminArticulo", async (req, res) => {
+  // Recogida variables introducidas en la llamada al API
+  var nombreArticulo = req.body.nombre_articulo;
+  var marcaArticulo = req.body.marca_articulo;
+  var modeloArticulo = req.body.modelo_articulo;
+  var precioArticulo = parseInt(req.body.precio_articulo);
+  var colorArticulo = req.body.color_articulo;
+  var almacenamientoArticulo = req.body.almacenamiento_articulo;
+  var fotoArticulo = req.body.foto_articulo;
+  var idArticulo = req.body.id_articulo;
+  var articuloPromocion = req.body.articulo_promocion;
+  var descripcionArticulo = req.body.descripcion_articulo;
+  var precioArticuloAnterior = parseInt(req.body.precio_articulo_anterior);
+  var stockArticulo = parseInt(req.body.stock);
+
+  //Conexión a la colección
+  let collection = await db.collection("articulos");
+
+  //Construcción de la query
+
+  let query = { id_articulo: idArticulo };
+  let result2 = await collection.findOne(query);
+  if (result2) {
+    //El artículo existe, actualizamos el artículo
+    let document = {
+      $set: {
+        nombre_articulo: nombreArticulo,
+        marca_articulo: marcaArticulo,
+        modelo_articulo: modeloArticulo,
+        precio_articulo: precioArticulo,
+        color_articulo: colorArticulo,
+        almacenamiento_articulo: almacenamientoArticulo,
+        foto_articulo: fotoArticulo,
+        id_articulo: idArticulo,
+        articulo_promocion: articuloPromocion,
+        descripcion_articulo: descripcionArticulo,
+        precio_articulo_anterior: precioArticuloAnterior,
+        stock: stockArticulo,
+      },
+    };
+    let result = await collection.updateOne(query, document);
+    if (!result) res.status(404).send("Error al actualizar");
+    else res.status(200).send(result);
+  } else {
+    //El artículo no existe, insertamos uno nuevo
+    let document = {
+      nombre_articulo: nombreArticulo,
+      marca_articulo: marcaArticulo,
+      modelo_articulo: modeloArticulo,
+      precio_articulo: precioArticulo,
+      color_articulo: colorArticulo,
+      almacenamiento_articulo: almacenamientoArticulo,
+      foto_articulo: fotoArticulo,
+      id_articulo: idArticulo,
+      articulo_promocion: articuloPromocion,
+      descripcion_articulo: descripcionArticulo,
+      precio_articulo_anterior: precioArticuloAnterior,
+      stock: stockArticulo,
+    };
+    let result = await collection.insertOne(document);
+    if (!result) res.status(404).send("Error al insertar");
+    else res.status(200).send(result);
+  }
 });
 
 app.put("/anadirArticuloCarrito", async (req, res) => {
@@ -670,7 +850,7 @@ app.put("/anadirArticuloCarrito", async (req, res) => {
   console.log("API anadirArticuloCarrito");
 });
 
-app.post("/realizarPedido", async (req, res) => {
+app.post("/realizarPedido", verifyToken, async (req, res) => {
   //Recuperar parametros de entrada
   var id_usuario = req.query.idUsuario;
   //Ver lo que hay en el carrito
