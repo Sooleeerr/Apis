@@ -827,7 +827,7 @@ app.post("/realizarPedido", verifyToken, async (req, res) => {
       });
       if (articulo) {
         const updatedStock = articulo.stock - cantidadComprada;
-        if (updatedStock <= 0) {
+        if (updatedStock < 0) {
           hayStock = false;
         }
       }
@@ -842,7 +842,7 @@ app.post("/realizarPedido", verifyToken, async (req, res) => {
         });
         if (articulo) {
           const updatedStock = articulo.stock - cantidadComprada;
-          if (updatedStock <= 0) {
+          if (updatedStock < 0) {
             hayStock = false;
           } else {
             await articulosCollection.updateOne(
@@ -888,16 +888,22 @@ app.post("/realizarPedido", verifyToken, async (req, res) => {
         { $set: { estado: "Inactivo" } }
       );
       enviarCorreo.enviarPedido(idPedido, id_usuario, nuevoPedido);
-      res.json({ mensaje: "Pedido creado exitosamente.", id_pedido: idPedido });
+      res.json({
+        mensaje: "Pedido creado exitosamente.",
+        id_pedido: idPedido,
+        pedidoOK: true,
+      });
     } else {
       //No hay stock
       res.status(404).json({
-        error: "Falta stock de algún producto.",
+        mensaje: "Falta stock de algún producto.",
+        id_pedido: "0",
+        pedidoOK: false,
       });
     }
   } else {
     res.status(404).json({
-      error: "No se encontró el carrito para el usuario proporcionado.",
+      mensaje: "No se encontró el carrito para el usuario proporcionado.",
     });
   }
 
